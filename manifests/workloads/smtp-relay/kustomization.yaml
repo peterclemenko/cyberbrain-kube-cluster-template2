@@ -10,7 +10,7 @@ resources:
 images:
   - name: smtp-relay-container-image
     newName: ghcr.io/foxcpp/maddy
-    newTag: 0.7.0
+    newTag: 0.7.1
 
 helmCharts:
   - name: kah-common-chart
