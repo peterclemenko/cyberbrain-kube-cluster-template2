@@ -1,0 +1,15 @@
+kind: Kustomization
+namespace: kube-system
+
+helmCharts:
+- name: node-feature-discovery
+  releaseName: node-feature-discovery
+  repo: https://kubernetes-sigs.github.io/node-feature-discovery/charts
+  version: "0.14.3"
+  valuesInline:
+    image:
+      repository: core.harbor.homelab.danmanners.com/registry.k8s.io/nfd/node-feature-discovery
+
+resources:
+# renovate: datasource=github-releases depName=kubernetes-sigs/node-feature-discovery
+- https://raw.githubusercontent.com/kubernetes-sigs/node-feature-discovery/v0.14.3/deployment/helm/node-feature-discovery/crds/nfd-api-crds.yaml

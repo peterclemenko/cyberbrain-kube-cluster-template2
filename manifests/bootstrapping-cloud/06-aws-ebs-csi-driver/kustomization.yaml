@@ -1,0 +1,65 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+
+helmCharts:
+# https://github.com/kubernetes-sigs/aws-ebs-csi-driver
+- name: aws-ebs-csi-driver
+  releaseName: aws-ebs-csi-driver
+  namespace: kube-system
+  repo: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+  version: "2.25.0"
+  valuesInline:
+    serviceAccount:
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::977656673179:role/kubeNodeRole-596be7d
+    # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/blob/master/docs/parameters.md
+    storageClasses:
+    - name: gp3-ext4
+      annotations:
+        storageclass.kubernetes.io/is-default-class: "true"
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      parameters:
+        encrypted: "true"
+        csi.storage.k8s.io/fstype: ext4
+    - name: gp3-xfs
+      reclaimPolicy: Delete
+      allowVolumeExpansion: true
+      parameters:
+        encrypted: "true"
+        csi.storage.k8s.io/fstype: xfs
+
+patches:
+- patch: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: ebs-csi-driver-test
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+- target:
+    group: policy
+    version: v1beta1
+    kind: PodDisruptionBudget
+    name: '.*'
+  patch: |-
+    - op: replace
+      path: "/apiVersion"
+      value: policy/v1
+- patch: |-
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: ebs-csi-driver-test
+    spec:
+      containers:
+      - name: kubetest2
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"

@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tekton-dashboard
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: tekton-authsecret
+    nginx.ingress.kubernetes.io/auth-realm: 'Tekton Dashboard - Authentication Required'
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - tekton.homelab.danmanners.com
+    secretName: tekton-cert
+  rules:
+  - host: tekton.homelab.danmanners.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: tekton-dashboard
+            port:
+              number: 9097
+        path: /
+        pathType: Prefix

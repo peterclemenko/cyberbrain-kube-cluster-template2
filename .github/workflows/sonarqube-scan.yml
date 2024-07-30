@@ -1,0 +1,21 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  sonar-scan:
+    # 'if=false' Disables the workflow
+    if: false
+    name: Scan with SonarQube
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+    - uses: sonarsource/sonarqube-scan-action@v2
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}

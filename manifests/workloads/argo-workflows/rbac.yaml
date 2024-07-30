@@ -1,0 +1,50 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: goodmannershosting-admins
+rules:
+- verbs: [get, watch, list]
+  apiGroups: [""]
+  resources: [configmaps, events]
+- verbs: [get, watch, list, delete]
+  apiGroups: [""]
+  resources: [pods]
+- verbs: [get, list]
+  apiGroups: [""]
+  resources: [pods/log]
+- verbs: [get, create]
+  apiGroups: [""]
+  resources: [secrets]
+  resourceNames: [sso]
+- verbs: [get, list, watch]
+  apiGroups: [""]
+  resources: [serviceaccounts]
+- verbs: [create, watch, patch]
+  apiGroups: [""]
+  resources: [events]
+- verbs: [create, get, list, watch, update, patch, delete]
+  apiGroups: [argoproj.io]
+  resources:
+  - cronworkflows
+  - eventbus
+  - eventsources
+  - sensors
+  - workfloweventbindings
+  - workflows
+  - workflowtaskresults
+  - workflowtasksets
+  - workflowtemplates
+  - clusterworkflowtemplates
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: goodmannershosting-admins
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: argo-workflows
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: goodmannershosting-admins

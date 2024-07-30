@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: git
+
+resources:
+- namespace.yaml
+- external-dns.yaml
+- app.ini.yaml
+
+components:
+- database
+- secrets
+
+helmCharts:
+- name: gitea
+  releaseName: gitea
+  namespace: git
+  repo: https://dl.gitea.io/charts
+  version: 9.6.1
+  valuesFile: values.yaml
+
+patches:
+- patch: |
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: gitea-ssh
+      namespace: git
+    spec:
+      loadBalancerClass: metallb

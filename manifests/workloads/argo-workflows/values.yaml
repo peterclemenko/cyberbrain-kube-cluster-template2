@@ -1,0 +1,60 @@
+crds:
+  install: true
+  keep: true
+
+workflow:
+  rbac:
+    create: true
+  serviceAccount:
+    create: true
+
+controller:
+  image:
+    registry: core.harbor.homelab.danmanners.com/quay.io
+  workflowNamespaces:
+  - default
+  - workflows
+
+executor:
+  image:
+    registry: core.harbor.homelab.danmanners.com/quay.io
+
+server:
+  enabled: true
+  rbac:
+    create: true
+  serviceAccount:
+    annotations:
+      workflows.argoproj.io/rbac-rule: "'GoodMannersHosting:admins' in groups"
+      workflows.argoproj.io/rbac-rule-precedence: "1"
+      workflows.argoproj.io/service-account-token.name: admin-user.service-account-token
+  extraArgs:
+  - --secure
+  - --auth-mode=sso
+  image:
+    registry: core.harbor.homelab.danmanners.com/quay.io
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+    - workflows.homelab.danmanners.com
+    tls:
+    - secretName: workflows-cert
+      hosts:
+      - workflows.homelab.danmanners.com
+  sso:
+    enabled: true
+    issuer: https://argocd.homelab.danmanners.com/api/dex
+    redirectUrl: https://workflows.homelab.danmanners.com/oauth2/callback
+    sessionExpiry: 240h
+    scopes:
+    - email
+    userInfoGroupsField: memberof
+    rbac:
+      enabled: true
+    clientId:
+      name: argo-server-sso
+      key: client-id
+    clientSecret:
+      name: argo-server-sso
+      key: client-secret

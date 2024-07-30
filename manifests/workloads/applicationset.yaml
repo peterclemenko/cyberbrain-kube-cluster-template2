@@ -1,0 +1,76 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: workloads
+spec:
+  generators:
+  - list:
+      elements:
+      - appName: actions-runner-controller
+        namespace: github
+        targetRev: main
+      - appName: argo-workflows
+        namespace: argo-workflows
+        targetRev: main
+      - appName: argocd-repo-creds
+        namespace: argocd
+        targetRev: main
+      - appName: argo-events
+        namespace: argo-events
+        targetRev: main
+      - appName: cloudnative-pg
+        namespace: postgres
+        targetRev: main
+      - appName: excalidraw
+        namespace: excalidraw
+        targetRev: main
+      - appName: gitea
+        namespace: git
+        targetRev: main
+      - appName: jenkins-oss
+        namespace: jenkins
+        targetRev: main
+      - appName: node-feature-discovery
+        namespace: kube-system
+        targetRev: main
+      - appName: nvidia
+        namespace: kube-system
+        targetRev: main
+      - appName: qemu-guest-agent
+        namespace: kube-system
+        targetRev: main
+      - appName: sonarqube-oss
+        namespace: sonarqube
+        targetRev: main
+      - appName: spiderfoot
+        namespace: osint
+        targetRev: main
+      - appName: talos-pxeboot
+        namespace: pxeboot
+        targetRev: pxeboot
+      - appName: tabby
+        namespace: default
+        targetRev: main
+      - appName: webssh
+        namespace: webssh
+        targetRev: main
+      - appName: tailscale
+        namespace: networking
+        targetRev: main
+  template:
+    metadata:
+      name: '{{appName}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/danmanners/homelab-kube-cluster.git
+        targetRevision: '{{targetRev}}'
+        path: manifests/workloads/{{appName}}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+      syncPolicy:
+        automated:
+          prune: true
+        syncOptions:
+        - CreateNamespace=true

@@ -1,0 +1,54 @@
+---
+global:
+  nameOverride: blocky
+
+image:
+  repository: ghcr.io/0xerr0r/blocky
+  tag: v0.22
+  pullPolicy: IfNotPresent
+
+podAnnotations:
+  configmap.reloader.stakater.com/reload: "blocky-config"
+
+env:
+  TZ: America/New_York
+
+service:
+  main:
+    enabled: false
+  dns:
+    enabled: true
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    annotations:
+      metallb.universe.tf/loadBalancerIPs: 10.56.1.20
+    ports:
+      dns-tcp:
+        enabled: true
+        protocol: TCP
+        port: 53
+        targetPort: 53
+      dns-udp:
+        enabled: true
+        protocol: UDP
+        port: 53
+        targetPort: 53
+
+ingress:
+  main:
+    enabled: false
+
+persistence:
+  config:
+    enabled: "true"
+    mountPath: "/app/config.yml"
+    subPath: "config.yml"
+    name: blocky-config
+    type: "configMap"
+    volumeSpec:
+      configMap: blocky-config
+  logs:
+    enabled: true
+    storageClass: ssd
+    accessMode: ReadWriteMany
+    size: 1Gi

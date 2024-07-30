@@ -1,0 +1,14 @@
+api:
+  host: kargo.homelab.danmanners.com
+  ingress:
+    enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: acme-prod
+    ingressClassName: nginx
+    tls:
+      enabled: true
+      selfSignedCert: true
+  adminAccount:
+    enabled: true
+    passwordHash: $2a$10$HpVEHlbGL6iHDWZjwdwkeuLYFVriLWln63aLj7hX8BUjwEXm93o3.
+    tokenSigningKey: QOng1Mgj6edrEyiSMORkaTVeHwgnCkC0zVgJfI

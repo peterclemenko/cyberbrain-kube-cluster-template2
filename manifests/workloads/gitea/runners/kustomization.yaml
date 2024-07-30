@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: git
+
+resources:
+- rbac.yaml
+- pod.yaml
+- pvc.yaml
+- rbac-test-job.yaml
+
+images:
+- name: init-container-image
+  newName: core.harbor.homelab.danmanners.com/docker.io/library/alpine
+  newTag: latest
+- name: runner-image
+  newName: core.harbor.homelab.danmanners.com/docker.io/gitea/act_runner
+  newTag: nightly
+- name: docker-daemon-image
+  newName: core.harbor.homelab.danmanners.com/docker.io/library/docker
+  newTag: 24.0.7-dind

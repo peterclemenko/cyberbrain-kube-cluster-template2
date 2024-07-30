@@ -1,0 +1,31 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: primary
+  namespace: postgres
+spec:
+  instances: 2
+  primaryUpdateStrategy: unsupervised
+  storage:
+    size: 40Gi
+    storageClass: ceph-rbd
+  superuserSecret:
+    name: postgres-superuser
+  monitoring:
+    enablePodMonitor: true
+  backup:
+    retentionPolicy: 5d
+    barmanObjectStore:
+      wal:
+        compression: bzip2
+        maxParallel: 8
+      destinationPath: s3://danmanners-backups/postgres
+      endpointURL: https://s3.us-east-1.amazonaws.com
+      serverName: postgres-v1
+      s3Credentials:
+        accessKeyId:
+          name: postgres-s3
+          key: AWS_ACCESS_KEY
+        secretAccessKey:
+          name: postgres-s3
+          key: AWS_SECRET_KEY

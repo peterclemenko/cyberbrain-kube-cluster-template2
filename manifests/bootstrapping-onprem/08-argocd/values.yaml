@@ -1,0 +1,141 @@
+configs:
+  cm:
+    admin.enabled: false
+    # K8s@Home User
+    accounts.k8sathome: login
+    accounts.k8sathome.enabled: true
+    # URL Configuration
+    url: https://argocd.homelab.danmanners.com
+    # Dex Config
+    dex.config: |
+      connectors:
+      - type: github
+        id: github
+        name: GitHub
+        config:
+          clientID: 9cf61427330f61ebc1e8
+          clientSecret: $github-oauth:dex.github.clientSecret
+          orgs:
+            - name: GoodMannersHosting
+      staticClients:
+        - name: Argo Workflow
+          id: argo-workflows-sso
+          secretEnv: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
+          redirectURIs:
+            - https://workflows.homelab.danmanners.com/oauth2/callback
+
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      p, role:org-admin, applications, create, */*, allow
+      p, role:org-admin, applications, update, */*, allow
+      p, role:org-admin, applications, delete, */*, allow
+      p, role:org-admin, applications, sync, */*, allow
+      p, role:org-admin, applications, override, */*, allow
+      p, role:org-admin, applications, action/*, */*, allow
+      p, role:org-admin, applicationsets, get, */*, allow
+      p, role:org-admin, applicationsets, create, */*, allow
+      p, role:org-admin, applicationsets, update, */*, allow
+      p, role:org-admin, applicationsets, delete, */*, allow
+      p, role:org-admin, certificates, create, *, allow
+      p, role:org-admin, certificates, update, *, allow
+      p, role:org-admin, certificates, delete, *, allow
+      p, role:org-admin, clusters, create, *, allow
+      p, role:org-admin, clusters, update, *, allow
+      p, role:org-admin, clusters, delete, *, allow
+      p, role:org-admin, repositories, create, *, allow
+      p, role:org-admin, repositories, update, *, allow
+      p, role:org-admin, repositories, delete, *, allow
+      p, role:org-admin, projects, create, *, allow
+      p, role:org-admin, projects, update, *, allow
+      p, role:org-admin, projects, delete, *, allow
+      p, role:org-admin, accounts, update, *, allow
+      p, role:org-admin, gpgkeys, create, *, allow
+      p, role:org-admin, gpgkeys, delete, *, allow
+      p, role:org-admin, exec, create, */*, allow
+
+      g, GoodMannersHosting:admins, role:org-admin
+
+  params:
+    server.insecure: "true"
+  secret:
+    extra:
+      accounts.k8sathome.password: $2a$10$rue.sIWbmaMzDZ/pdbj/A.52KLOpe31cjqFQvaMcLLgYEi5u/J13C
+repoServer:
+  # Until KSOPS setup logic is re-written, this can only run
+  # on amd64 nodes.
+  nodeSelector:
+    kubernetes.io/arch: amd64
+
+  # Env
+  env:
+  - name: XDG_CONFIG_HOME
+    value: '/.config'
+  # Add the KSOPS plugin
+  initContainers:
+  - name: install-custom-tools
+    image: docker.io/library/alpine:latest
+    command: ["ash", "-c"]
+    args:
+    - |
+      export ARCH=$(uname -m | awk '{print ($1=="x86_64" ? "x86_64" : ($1=="aarch64" ? "arm64" : "unknown"))}')
+      wget -qO- https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.2.1/ksops_4.2.1_Linux_${ARCH}.tar.gz | tar -xzf -
+      export ARCH=$(uname -m | awk '{print ($1=="x86_64" ? "amd64" : ($1=="aarch64" ? "arm64" : "unknown"))}')
+      wget -qO- https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.1.1/kustomize_v5.1.1_linux_${ARCH}.tar.gz | tar -xzf -
+      mv kustomize ksops /custom-tools/
+      chown -R 999:999 /custom-tools/*
+    volumeMounts:
+    - mountPath: /custom-tools
+      name: custom-tools
+  # Volume Work
+  volumeMounts:
+  - mountPath: /usr/local/bin/kustomize
+    name: custom-tools
+    subPath: kustomize
+  - mountPath: /.config/kustomize/plugin/viaduct.ai/v1/ksops/ksops
+    name: custom-tools
+    subPath: ksops
+  - mountPath: "/home/argocd/.aws/credentials"
+    name: aws-creds
+    readOnly: true
+    subPath: credentials
+  volumes:
+  - name: custom-tools
+    emptyDir: {}
+  - name: aws-creds
+    secret:
+      secretName: aws-creds
+
+server:
+  config:
+    kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
+    application.instanceLabelKey: argocd.argoproj.io/instance
+    url: https://argocd.homelab.danmanners.com
+    # Why in the FUCK is this here? See below!
+    # https://argo-cd.readthedocs.io/en/release-2.4/faq/#why-is-my-application-still-outofsync-immediately-after-a-successful-sync
+    # https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml#L235
+    # Thanks a ton to @onedr0p, @toboshii, and @xUnholy for the help in figuring this out!
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations: {}
+    hosts:
+    - argocd.homelab.danmanners.com
+    tls:
+    - secretName: argocd-cert
+      hosts:
+      - argocd.homelab.danmanners.com
+
+dex:
+  env:
+  - name: ARGO_WORKFLOWS_SSO_CLIENT_ID
+    valueFrom:
+      secretKeyRef:
+        name: argo-workflows-sso
+        key: client-id
+  - name: ARGO_WORKFLOWS_SSO_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: argo-workflows-sso
+        key: client-secret
+
